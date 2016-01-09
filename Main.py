@@ -17,7 +17,6 @@ def load_map(path):
   try:
       f = open(path, 'r+')
       map = f.read()
-     # map = map[:-1] #remove extra /n
       f.close()
   except:
       print "can't read map.csv"
@@ -27,7 +26,7 @@ def load_map(path):
 
 
 def main():
-  pygame.init()
+  pygame.init() 
   
   size = width, height = 480,416
   screen = pygame.display.set_mode(size)
@@ -92,16 +91,15 @@ def main():
             elif event.key == pygame.K_s:
                 key_s = False
     if key_w == True:
-        y = y - 1
+        y = y - 3
     if key_s == True:
-        y = y + 1
+        y = y + 3
     if key_a == True:
-        x = x - 1
+        x = x - 3
     if key_d == True:
-        x = x + 1
+        x = x + 3
     screen.blit(get_image(imagePath), (x * 32, y * 32))
     screen.blit(avatar, (x, y))
-      
     pygame.display.flip()
     clock.tick(60)
 
