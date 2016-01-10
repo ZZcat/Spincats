@@ -23,6 +23,17 @@ def load_map(path):
       sys.exit()
   return map
 
+class Avatar(pygame.sprite.Sprite):
+  def __init__(self, startX, startY):
+    pygame.sprite.Sprite.__init__(self)
+
+    self.image = get_image("avatar.png")
+    self.rect = self.image.get_rect()
+    self.rect.topleft = startX, startY
+
+  def move(self, x, y):
+    self.rect.x += x
+    self.rect.y += y
 
 
 def main():
@@ -39,7 +50,10 @@ def main():
           "f": {"image": "floor.png",#f: floor
                     "block": False}}
 
-  # Draw Map
+  # Draw Background
+  background = pygame.Surface(screen.get_size())
+  background = background.convert()
+
   rows = string.split(map, "\n")
   
   for x, row in enumerate(rows):
@@ -50,12 +64,14 @@ def main():
       
       tileInfo = info[tile]
       imagePath = tileInfo["image"]
-      screen.blit(get_image(imagePath), (x * 32, y * 32))
+      background.blit(get_image(imagePath), (x * 32, y * 32))
 
   # Starting Coordinates, based on tiles.
   # TODO: Load player data from a file when we add more attributes
   x, y = 32,32
-  avatar = get_image("avatar.png")
+  avatar = Avatar(x, y)
+
+  allSprites = pygame.sprite.RenderPlain((avatar))
 
   move_right = False
   move_left = False
@@ -93,15 +109,17 @@ def main():
                 move_down = False
 
     if move_up == True:
-        y = y - 3
+        avatar.move(0, -3)
     if move_down == True:
-        y = y + 3
+        avatar.move(0, 3)
     if move_left == True:
-        x = x - 3
+        avatar.move(-3, 0)
     if move_right == True:
-        x = x + 3
+        avatar.move(3, 0)
 
-    screen.blit(avatar, (x, y))
+    #allSprites.update()
+    screen.blit(background, (0, 0))
+    allSprites.draw(screen)
     pygame.display.flip()
     clock.tick(60)
     
