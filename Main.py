@@ -23,21 +23,31 @@ def load_map(path):
       sys.exit()
   return map
 
-class Avatar(pygame.sprite.Sprite):
-  def __init__(self, startX, startY):
-    pygame.sprite.Sprite.__init__(self)
+# The sprite for our Cat avatar
+class Avatar(pygame.sprite.Sprite): # Inherit Sprite functions
+  def __init__(self, x, y):
+    pygame.sprite.Sprite.__init__(self) # Set up Sprite object internals
 
     self.image = get_image("avatar.png")
     self.rect = self.image.get_rect()
-    self.rect.topleft = startX, startY
+    self.rect.topleft = x, y
 
   def move(self, x, y):
     self.rect.x += x
     self.rect.y += y
 
 
+# Fake sprite, doesn't have an image.
+# We are just using this sprite for collision detection
+# In the future, we might want to put blocking tiles on a layer above the background
+class Blocked(pygame.sprite.Sprite):
+  def __init__(self, x, y, width, height):
+    pygame.sprite.Sprite.__init__(self)
+    self.rect = pygame.Rect(x, y, width, height)
+
+
 def main():
-  pygame.init() 
+  pygame.init()
   
   size = width, height = 480,416
   screen = pygame.display.set_mode(size)
@@ -49,6 +59,9 @@ def main():
                    "block": True},
           "f": {"image": "floor.png",#f: floor
                     "block": False}}
+
+  # Group of Fake Sprites, we'll use this group to detect collisions with the Avatar
+  blockedGroup = pygame.sprite.RenderPlain()
 
   # Draw Background
   background = pygame.Surface(screen.get_size())
@@ -65,6 +78,12 @@ def main():
       tileInfo = info[tile]
       imagePath = tileInfo["image"]
       background.blit(get_image(imagePath), (x * 32, y * 32))
+
+      isBlocked = tileInfo["block"]
+      if (isBlocked):
+        blockedGroup.add(Blocked(x * 32, y * 32, 32, 32))
+
+      
 
   # Starting Coordinates, based on tiles.
   # TODO: Load player data from a file when we add more attributes
@@ -108,14 +127,20 @@ def main():
             elif event.key == pygame.K_s:
                 move_down = False
 
+    delta = [0, 0]
+
     if move_up == True:
-        avatar.move(0, -3)
+        delta[1] = -3
     if move_down == True:
-        avatar.move(0, 3)
+        delta[1] = 3
     if move_left == True:
-        avatar.move(-3, 0)
+        delta[0] = -3
     if move_right == True:
-        avatar.move(3, 0)
+        delta[0] = 3
+
+    avatar.move(delta[0], delta[1])
+    if pygame.sprite.spritecollide(avatar, blockedGroup, False):
+      avatar.move(-delta[0], -delta[1])
 
     #allSprites.update()
     screen.blit(background, (0, 0))
