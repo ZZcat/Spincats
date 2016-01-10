@@ -56,52 +56,57 @@ def main():
   # TODO: Load player data from a file when we add more attributes
   x, y = 32,32
   avatar = get_image("avatar.png")
-  print "Setting up keys"
-  key_d = False
-  key_a = False
-  key_w = False
-  key_s = False
-  print "Set all keys presses to False\n"
+
+  move_right = False
+  move_left = False
+  move_up = False
+  move_down = False
+  
   # Event Loop
   done = False
   clock = pygame.time.Clock()
+  
   while  not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             print "Quiting..."
             done = True
+            
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_d:
-                key_d = True
+                move_right = True
             elif event.key == pygame.K_a:
-                key_a = True
+                move_left = True
             elif event.key == pygame.K_w:
-                key_w = True
+                move_up = True
             elif event.key == pygame.K_s:
-                key_s = True
+                move_down = True
                 
-            
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_d:
-                key_d = False
+                move_right = False
             elif event.key == pygame.K_a:
-                key_a = False
+                move_left = False
             elif event.key == pygame.K_w:
-                key_w = False
+                move_up = False
             elif event.key == pygame.K_s:
-                key_s = False
-    if key_w == True:
+                move_down = False
+
+    if move_up == True:
         y = y - 3
-    if key_s == True:
+    if move_down == True:
         y = y + 3
-    if key_a == True:
+    if move_left == True:
         x = x - 3
-    if key_d == True:
+    if move_right == True:
         x = x + 3
-    screen.blit(get_image(imagePath), (x * 32, y * 32))
+
     screen.blit(avatar, (x, y))
     pygame.display.flip()
     clock.tick(60)
+    
+  pygame.quit()
+
 
 
 if __name__ == "__main__":
