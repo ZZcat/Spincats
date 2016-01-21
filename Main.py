@@ -143,6 +143,7 @@ def main():
       avatar.move(-delta[0], -delta[1])
 
     #allSprites.update()
+    # Update the screen
     screen.blit(background, (0, 0))
     allSprites.draw(screen)
     pygame.display.flip()
