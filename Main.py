@@ -1,7 +1,7 @@
 import pygame
 from pygame import *
 import string, sys, os, random
-size = width, height = 32*5,32*5
+from settings import *
 WIN_WIDTH = width
 WIN_HEIGHT = height
 HALF_WIDTH = int(WIN_WIDTH / 2)
@@ -213,7 +213,7 @@ def main():
 
   
   pygame.init()
-  map = load_map('map.csv')
+  map = load_map(MapName)
 
   map_split = map.split("\n")
   WIN_WIDTH = width
@@ -229,7 +229,7 @@ def main():
 
 
   pygame.mixer.music.load("music.mp3")
-  pygame.mixer.music.set_volume(0.5)
+  pygame.mixer.music.set_volume(musicVolume)
   pygame.mixer.music.play(-1, 0.0)
 
   # Tile Information
@@ -274,7 +274,7 @@ def main():
 
   # Starting Coordinates, based on tiles.
   # TODO: Load player data from a file when we add more attributes
-  x, y = 32,32
+  x, y = playerX, playerY
   avatar = Avatar(x, y)
 
   blockedPlayer.add(avatar)
@@ -291,8 +291,6 @@ def main():
   clock = pygame.time.Clock()
 
   #Charractor moving settings
-  charADistMoves = 0
-  charADistMoves = 0
   total_level_width  = len(map.split("\n"))*32
   total_level_height = len((map.split("\n"))[0])*32-32
   camera = Camera(complex_camera, total_level_width, total_level_height)
@@ -323,25 +321,23 @@ def main():
                 move_up = False
             elif event.key == pygame.K_s:
                 move_down = False
-    #Music
     
     camera.update(avatar)
 
     delta = [0, 0]
     
     if move_up == True:
-        delta[1] = -2
+        delta[1] = -playerDelta
     if move_down == True:
-        delta[1] = 2
+        delta[1] = playerDelta
     if move_left == True:
-        delta[0] = -2
+        delta[0] = -playerDelta
     if move_right == True:
-        delta[0] = 2
+        delta[0] = playerDelta
 
-    avatar.move(delta[0], delta[1])
-
-
-    if TestBlock(avatar, [blockedGroup]):
+    avatar.move(delta[0], delta[1]) # Move the player
+    
+    if TestBlock(avatar, [blockedGroup]): # Check player for colitions
       avatar.move(0, -delta[1])
       if TestBlock(avatar, [blockedGroup]):
           avatar.move(-delta[0], delta[1])
@@ -349,18 +345,13 @@ def main():
               avatar.move(0, -delta[1])
 
     
-    #allSprites.update()
     # Update the screen
- #   screen.blit(background, camera.apply(0,0))
-
     count = 0
     for e in entities:
       screen.blit(e.image, camera.apply(e))
-      
     screen.blit(avatar.image, camera.apply(avatar))
- #   screen.blit(background, (0,0))
-    pygame.display.flip()
-    clock.tick(120)
+    pygame.display.update()
+    clock.tick(clockTick)
   pygame.quit()
 
 
