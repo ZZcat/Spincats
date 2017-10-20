@@ -342,7 +342,11 @@ def main():
 
 
     if TestBlock(avatar, [blockedGroup]):
-      avatar.move(-delta[0], -delta[1])
+      avatar.move(0, -delta[1])
+      if TestBlock(avatar, [blockedGroup]):
+          avatar.move(-delta[0], delta[1])
+          if TestBlock(avatar, [blockedGroup]):
+              avatar.move(0, -delta[1])
 
     
     #allSprites.update()
