@@ -1,5 +1,116 @@
 import pygame
-import string, sys, os
+from pygame import *
+import string, sys, os, random
+size = width, height = 32*5,32*5
+WIN_WIDTH = width
+WIN_HEIGHT = height
+HALF_WIDTH = int(WIN_WIDTH / 2)
+HALF_HEIGHT = int(WIN_HEIGHT / 2)
+class Camera(object):
+    def __init__(self, camera_func, width, height):
+        self.camera_func = camera_func
+        self.state = Rect(0, 0, width, height)
+
+    def apply(self, target):
+        return target.rect.move(self.state.topleft)
+
+    def update(self, target):
+        self.state = self.camera_func(self.state, target.rect)
+
+def simple_camera(camera, target_rect):
+    l, t, _, _ = target_rect
+    _, _, w, h = camera
+    return Rect(-l+HALF_WIDTH, -t+HALF_HEIGHT, w, h)
+
+def complex_camera(camera, target_rect):
+    l, t, _, _ = target_rect
+    _, _, w, h = camera
+    l, t, _, _ = -l+HALF_WIDTH, -t+HALF_HEIGHT, w, h
+
+    l = min(0, l)                           # stop scrolling at the left edge
+    l = max(-(camera.width-WIN_WIDTH), l)   # stop scrolling at the right edge
+    t = max(-(camera.height-WIN_HEIGHT), t) # stop scrolling at the bottom
+    t = min(0, t)                           # stop scrolling at the top
+    return Rect(l, t, w, h)
+
+class Entity(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+
+class Player(Entity):
+    def __init__(self, x, y):
+        Entity.__init__(self)
+        self.xvel = 0
+        self.yvel = 0
+        self.onGround = False
+        self.image = Surface((32,32))
+        self.image.fill(Color("#0000FF"))
+        self.image.convert()
+        self.rect = Rect(x, y, 32, 32)
+
+    def update(self, up, down, left, right, running, platforms):
+        if up:
+            # only jump if on the ground
+            if self.onGround: self.yvel -= 10
+        if down:
+            pass
+        if running:
+            self.xvel = 12
+        if left:
+            self.xvel = -8
+        if right:
+            self.xvel = 8
+        if not self.onGround:
+            # only accelerate with gravity if in the air
+            self.yvel += 0.3
+            # max falling speed
+            if self.yvel > 100: self.yvel = 100
+        if not(left or right):
+            self.xvel = 0
+        # increment in x direction
+        self.rect.left += self.xvel
+        # do x-axis collisions
+        self.collide(self.xvel, 0, platforms)
+        # increment in y direction
+        self.rect.top += self.yvel
+        # assuming we're in the air
+        self.onGround = False;
+        # do y-axis collisions
+        self.collide(0, self.yvel, platforms)
+
+    def collide(self, xvel, yvel, platforms):
+        for p in platforms:
+            if pygame.sprite.collide_rect(self, p):
+                if isinstance(p, ExitBlock):
+                    pygame.event.post(pygame.event.Event(QUIT))
+                if xvel > 0:
+                    self.rect.right = p.rect.left
+                    print "collide right"
+                if xvel < 0:
+                    self.rect.left = p.rect.right
+                    print "collide left"
+                if yvel > 0:
+                    self.rect.bottom = p.rect.top
+                    self.onGround = True
+                    self.yvel = 0
+                if yvel < 0:
+                    self.rect.top = p.rect.bottom
+
+
+class Platform(Entity):
+    def __init__(self, x, y, imagePath):
+        Entity.__init__(self)
+
+        self.image = get_image(imagePath)
+        self.rect = Rect(x, y, 32, 32)
+
+    def update(self):
+        pass
+
+class ExitBlock(Platform):
+    def __init__(self, x, y):
+        Platform.__init__(self, x, y)
+        self.image.fill(Color("#0033FF"))
 
 _image_library = {}
 def get_image(path):
@@ -24,19 +135,71 @@ def load_map(path):
   return map
 
 # The sprite for our Cat avatar
-class Avatar(pygame.sprite.Sprite): # Inherit Sprite functions
-  def __init__(self, x, y):
-    pygame.sprite.Sprite.__init__(self) # Set up Sprite object internals
 
-    self.image = get_image("avatar.png")
-    self.rect = self.image.get_rect()
-    self.rect.topleft = x, y
+class Avatar(Entity):
+    def __init__(self, x, y):
+        Entity.__init__(self)
+        self.xvel = 0
+        self.yvel = 0
+        self.onGround = False
+        self.image = get_image("avatar.png")
+        self.rect = Rect(x, y, 32, 32)
 
-  def move(self, x, y):
-    self.rect.x += x
-    self.rect.y += y
+    def update(self, up, down, left, right, running, platforms):
+        if up:
+            # only jump if on the ground
+            if self.onGround: self.yvel -= 10
+        if down:
+            pass
+        if running:
+            self.xvel = 12
+        if left:
+            self.xvel = -8
+        if right:
+            self.xvel = 8
+        if not self.onGround:
+            # only accelerate with gravity if in the air
+            self.yvel += 0.3
+            # max falling speed
+            if self.yvel > 100: self.yvel = 100
+        if not(left or right):
+            self.xvel = 0
+        # increment in x direction
+        self.rect.left += self.xvel
+        # do x-axis collisions
+        self.collide(self.xvel, 0, platforms)
+        # increment in y direction
+        self.rect.top += self.yvel
+        # assuming we're in the air
+        self.onGround = False;
+        # do y-axis collisions
+        self.collide(0, self.yvel, platforms)
+    def move(self, x, y):
+     self.rect.x += x
+     self.rect.y += y
+     def collide(self, xvel, yvel, platforms):
+        for p in platforms:
+            if pygame.sprite.collide_rect(self, p):
+                if isinstance(p, ExitBlock):
+                    pygame.event.post(pygame.event.Event(QUIT))
+                if xvel > 0:
+                    self.rect.right = p.rect.left
+                    print "collide right"
+                if xvel < 0:
+                    self.rect.left = p.rect.right
+                    print "collide left"
+                if yvel > 0:
+                    self.rect.bottom = p.rect.top
+                    self.onGround = True
+                    self.yvel = 0
+                if yvel < 0:
+                    self.rect.top = p.rect.bottom
 
 
+def TestBlock(Char, blockedGroupList):
+  for blockedGroup in blockedGroupList:
+    if pygame.sprite.spritecollide(Char, blockedGroup, False):
+      return True
 # Fake sprite, doesn't have an image.
 # We are just using this sprite for collision detection
 # In the future, we might want to put blocking tiles on a layer above the background
@@ -47,21 +210,44 @@ class Blocked(pygame.sprite.Sprite):
 
 
 def main():
-  pygame.init()
-  
-  size = width, height = 480,416
-  screen = pygame.display.set_mode(size)
 
+  
+  pygame.init()
   map = load_map('map.csv')
+
+  map_split = map.split("\n")
+  WIN_WIDTH = width
+  WIN_HEIGHT = height
+  HALF_WIDTH = int(WIN_WIDTH / 2)
+  HALF_HEIGHT = int(WIN_HEIGHT / 2)
+
+  DISPLAY = (WIN_WIDTH, WIN_HEIGHT)
+  DEPTH = 32
+  FLAGS = 0
+  CAMERA_SLACK = 30
+  screen = pygame.display.set_mode(DISPLAY, FLAGS, DEPTH)
+
+
+  pygame.mixer.music.load("music.mp3")
+  pygame.mixer.music.set_volume(0.5)
+  pygame.mixer.music.play(-1, 0.0)
 
   # Tile Information
   info = {"w": {"image": "wall.png",#w: wall
                    "block": True},
+          "g": {"image": "gray.png",#w: gray block
+                   "block": False},
+          "p": {"image": "point.png",#w: black point
+                   "block": True},
           "f": {"image": "floor.png",#f: floor
-                    "block": False}}
+                   "block": False}}
 
   # Group of Fake Sprites, we'll use this group to detect collisions with the Avatar
   blockedGroup = pygame.sprite.RenderPlain()
+  blockedPoints = pygame.sprite.RenderPlain()
+  entities = pygame.sprite.Group()
+  blockedPlayer = pygame.sprite.RenderPlain()
+  
 
   # Draw Background
   background = pygame.Surface(screen.get_size())
@@ -77,8 +263,9 @@ def main():
       
       tileInfo = info[tile]
       imagePath = tileInfo["image"]
-      background.blit(get_image(imagePath), (x * 32, y * 32))
-
+   #   background.blit(get_image(imagePath), (x * 32, y * 32))
+      p = Platform(x*32, y*32, imagePath)
+      entities.add(p)
       isBlocked = tileInfo["block"]
       if (isBlocked):
         blockedGroup.add(Blocked(x * 32, y * 32, 32, 32))
@@ -90,6 +277,8 @@ def main():
   x, y = 32,32
   avatar = Avatar(x, y)
 
+  blockedPlayer.add(avatar)
+
   allSprites = pygame.sprite.RenderPlain((avatar))
 
   move_right = False
@@ -100,8 +289,16 @@ def main():
   # Event Loop
   done = False
   clock = pygame.time.Clock()
-  
-  while  not done:
+
+  #Charractor moving settings
+  charADistMoves = 0
+  charADistMoves = 0
+  total_level_width  = len(map.split("\n"))*32
+  total_level_height = len((map.split("\n"))[0])*32-32
+  camera = Camera(complex_camera, total_level_width, total_level_height)
+  entities.add(avatar)
+  print entities
+  while not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             print "Quiting..."
@@ -126,29 +323,40 @@ def main():
                 move_up = False
             elif event.key == pygame.K_s:
                 move_down = False
+    #Music
+    
+    camera.update(avatar)
 
     delta = [0, 0]
-
+    
     if move_up == True:
-        delta[1] = -3
+        delta[1] = -2
     if move_down == True:
-        delta[1] = 3
+        delta[1] = 2
     if move_left == True:
-        delta[0] = -3
+        delta[0] = -2
     if move_right == True:
-        delta[0] = 3
+        delta[0] = 2
 
     avatar.move(delta[0], delta[1])
-    if pygame.sprite.spritecollide(avatar, blockedGroup, False):
+
+
+    if TestBlock(avatar, [blockedGroup]):
       avatar.move(-delta[0], -delta[1])
 
+    
     #allSprites.update()
     # Update the screen
-    screen.blit(background, (0, 0))
-    allSprites.draw(screen)
+ #   screen.blit(background, camera.apply(0,0))
+
+    count = 0
+    for e in entities:
+      screen.blit(e.image, camera.apply(e))
+      
+    screen.blit(avatar.image, camera.apply(avatar))
+ #   screen.blit(background, (0,0))
     pygame.display.flip()
-    clock.tick(60)
-    
+    clock.tick(120)
   pygame.quit()
 
 

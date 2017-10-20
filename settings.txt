@@ -1,0 +1,5 @@
+Player Image:
+Player X:
+Player Y:
+View width
+View height
