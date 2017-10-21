@@ -2,99 +2,31 @@ import pygame
 from pygame import *
 import string, sys, os, random
 from settings import *
-WIN_WIDTH = width
-WIN_HEIGHT = height
-HALF_WIDTH = int(WIN_WIDTH / 2)
-HALF_HEIGHT = int(WIN_HEIGHT / 2)
+HALF_WIDTH = int(width / 2)
+HALF_HEIGHT = int(height / 2)
 class Camera(object):
-    def __init__(self, camera_func, width, height):
-        self.camera_func = camera_func
+    def __init__(self, width, height):
         self.state = Rect(0, 0, width, height)
 
     def apply(self, target):
         return target.rect.move(self.state.topleft)
 
     def update(self, target):
-        self.state = self.camera_func(self.state, target.rect)
+        camera = self.state
+        target_rect = target.rect
+        l, t, _, _ = target_rect
+        _, _, w, h = camera
+        l, t, _, _ = -l+HALF_WIDTH, -t+HALF_HEIGHT, w, h
 
-def simple_camera(camera, target_rect):
-    l, t, _, _ = target_rect
-    _, _, w, h = camera
-    return Rect(-l+HALF_WIDTH, -t+HALF_HEIGHT, w, h)
-
-def complex_camera(camera, target_rect):
-    l, t, _, _ = target_rect
-    _, _, w, h = camera
-    l, t, _, _ = -l+HALF_WIDTH, -t+HALF_HEIGHT, w, h
-
-    l = min(0, l)                           # stop scrolling at the left edge
-    l = max(-(camera.width-WIN_WIDTH), l)   # stop scrolling at the right edge
-    t = max(-(camera.height-WIN_HEIGHT), t) # stop scrolling at the bottom
-    t = min(0, t)                           # stop scrolling at the top
-    return Rect(l, t, w, h)
+        l = min(0, l)                           # stop scrolling at the left edge
+        l = max(-(camera.width-width), l)   # stop scrolling at the right edge
+        t = max(-(camera.height-height), t) # stop scrolling at the bottom
+        t = min(0, t)                           # stop scrolling at the top
+        self.state = Rect(l, t, w, h)
 
 class Entity(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-
-class Player(Entity):
-    def __init__(self, x, y):
-        Entity.__init__(self)
-        self.xvel = 0
-        self.yvel = 0
-        self.onGround = False
-        self.image = Surface((32,32))
-        self.image.fill(Color("#0000FF"))
-        self.image.convert()
-        self.rect = Rect(x, y, 32, 32)
-
-    def update(self, up, down, left, right, running, platforms):
-        if up:
-            # only jump if on the ground
-            if self.onGround: self.yvel -= 10
-        if down:
-            pass
-        if running:
-            self.xvel = 12
-        if left:
-            self.xvel = -8
-        if right:
-            self.xvel = 8
-        if not self.onGround:
-            # only accelerate with gravity if in the air
-            self.yvel += 0.3
-            # max falling speed
-            if self.yvel > 100: self.yvel = 100
-        if not(left or right):
-            self.xvel = 0
-        # increment in x direction
-        self.rect.left += self.xvel
-        # do x-axis collisions
-        self.collide(self.xvel, 0, platforms)
-        # increment in y direction
-        self.rect.top += self.yvel
-        # assuming we're in the air
-        self.onGround = False;
-        # do y-axis collisions
-        self.collide(0, self.yvel, platforms)
-
-    def collide(self, xvel, yvel, platforms):
-        for p in platforms:
-            if pygame.sprite.collide_rect(self, p):
-                if isinstance(p, ExitBlock):
-                    pygame.event.post(pygame.event.Event(QUIT))
-                if xvel > 0:
-                    self.rect.right = p.rect.left
-                    print "collide right"
-                if xvel < 0:
-                    self.rect.left = p.rect.right
-                    print "collide left"
-                if yvel > 0:
-                    self.rect.bottom = p.rect.top
-                    self.onGround = True
-                    self.yvel = 0
-                if yvel < 0:
-                    self.rect.top = p.rect.bottom
 
 
 class Platform(Entity):
@@ -130,7 +62,7 @@ def load_map(path):
       map = f.read()
       f.close()
   except:
-      print "can't read map.csv"
+      print "Can't read map.csv"
       sys.exit()
   return map
 
@@ -145,61 +77,17 @@ class Avatar(Entity):
         self.image = get_image("avatar.png")
         self.rect = Rect(x, y, 32, 32)
 
-    def update(self, up, down, left, right, running, platforms):
-        if up:
-            # only jump if on the ground
-            if self.onGround: self.yvel -= 10
-        if down:
-            pass
-        if running:
-            self.xvel = 12
-        if left:
-            self.xvel = -8
-        if right:
-            self.xvel = 8
-        if not self.onGround:
-            # only accelerate with gravity if in the air
-            self.yvel += 0.3
-            # max falling speed
-            if self.yvel > 100: self.yvel = 100
-        if not(left or right):
-            self.xvel = 0
-        # increment in x direction
-        self.rect.left += self.xvel
-        # do x-axis collisions
-        self.collide(self.xvel, 0, platforms)
-        # increment in y direction
-        self.rect.top += self.yvel
-        # assuming we're in the air
-        self.onGround = False;
-        # do y-axis collisions
-        self.collide(0, self.yvel, platforms)
     def move(self, x, y):
      self.rect.x += x
      self.rect.y += y
-     def collide(self, xvel, yvel, platforms):
-        for p in platforms:
-            if pygame.sprite.collide_rect(self, p):
-                if isinstance(p, ExitBlock):
-                    pygame.event.post(pygame.event.Event(QUIT))
-                if xvel > 0:
-                    self.rect.right = p.rect.left
-                    print "collide right"
-                if xvel < 0:
-                    self.rect.left = p.rect.right
-                    print "collide left"
-                if yvel > 0:
-                    self.rect.bottom = p.rect.top
-                    self.onGround = True
-                    self.yvel = 0
-                if yvel < 0:
-                    self.rect.top = p.rect.bottom
+
 
 
 def TestBlock(Char, blockedGroupList):
   for blockedGroup in blockedGroupList:
     if pygame.sprite.spritecollide(Char, blockedGroup, False):
       return True
+    
 # Fake sprite, doesn't have an image.
 # We are just using this sprite for collision detection
 # In the future, we might want to put blocking tiles on a layer above the background
@@ -210,25 +98,17 @@ class Blocked(pygame.sprite.Sprite):
 
 
 def main():
-
-  
   pygame.init()
+  
   map = load_map(MapName)
-
   map_split = map.split("\n")
-  WIN_WIDTH = width
-  WIN_HEIGHT = height
-  HALF_WIDTH = int(WIN_WIDTH / 2)
-  HALF_HEIGHT = int(WIN_HEIGHT / 2)
 
-  DISPLAY = (WIN_WIDTH, WIN_HEIGHT)
-  DEPTH = 32
-  FLAGS = 0
-  CAMERA_SLACK = 30
-  screen = pygame.display.set_mode(DISPLAY, FLAGS, DEPTH)
+  total_level_width  = len(map.split("\n"))*32
+  total_level_height = len((map.split("\n"))[0])*16+16
+  print total_level_height/32
+  screen = pygame.display.set_mode((width, height), 0, 32)
 
-
-  pygame.mixer.music.load("music.mp3")
+  pygame.mixer.music.load(musicFile)
   pygame.mixer.music.set_volume(musicVolume)
   pygame.mixer.music.play(-1, 0.0)
 
@@ -242,11 +122,9 @@ def main():
           "f": {"image": "floor.png",#f: floor
                    "block": False}}
 
-  # Group of Fake Sprites, we'll use this group to detect collisions with the Avatar
-  blockedGroup = pygame.sprite.RenderPlain()
-  blockedPoints = pygame.sprite.RenderPlain()
+  # Group of Sprites.
+  blockedGroup = pygame.sprite.RenderPlain() #we'll use this group to detect collisions with the Avatar
   entities = pygame.sprite.Group()
-  blockedPlayer = pygame.sprite.RenderPlain()
   
 
   # Draw Background
@@ -260,26 +138,18 @@ def main():
     tiles = string.split(row, ",")
     
     for y, tile in enumerate(tiles):
-      
       tileInfo = info[tile]
       imagePath = tileInfo["image"]
-   #   background.blit(get_image(imagePath), (x * 32, y * 32))
       p = Platform(x*32, y*32, imagePath)
       entities.add(p)
       isBlocked = tileInfo["block"]
       if (isBlocked):
         blockedGroup.add(Blocked(x * 32, y * 32, 32, 32))
-
       
 
-  # Starting Coordinates, based on tiles.
-  # TODO: Load player data from a file when we add more attributes
-  x, y = playerX, playerY
+  # Set avatar starting location to (x,y)
+  x,y = playerX, playerY
   avatar = Avatar(x, y)
-
-  blockedPlayer.add(avatar)
-
-  allSprites = pygame.sprite.RenderPlain((avatar))
 
   move_right = False
   move_left = False
@@ -291,13 +161,11 @@ def main():
   clock = pygame.time.Clock()
 
   #Charractor moving settings
-  total_level_width  = len(map.split("\n"))*32
-  total_level_height = len((map.split("\n"))[0])*32-32
-  camera = Camera(complex_camera, total_level_width, total_level_height)
+  camera = Camera(total_level_width, total_level_height)
   entities.add(avatar)
-  print entities
+  
   while not done:
-    for event in pygame.event.get():
+    for event in pygame.event.get(): # Get keypresses
         if event.type == pygame.QUIT:
             print "Quiting..."
             done = True
@@ -322,11 +190,11 @@ def main():
             elif event.key == pygame.K_s:
                 move_down = False
     
-    camera.update(avatar)
+    camera.update(avatar) # Update camera position.
 
     delta = [0, 0]
     
-    if move_up == True:
+    if move_up == True: # Calculate distance to move charractor
         delta[1] = -playerDelta
     if move_down == True:
         delta[1] = playerDelta
@@ -343,11 +211,9 @@ def main():
           avatar.move(-delta[0], delta[1])
           if TestBlock(avatar, [blockedGroup]):
               avatar.move(0, -delta[1])
-
-    
+              
     # Update the screen
-    count = 0
-    for e in entities:
+    for e in entities: # Add entities to screen
       screen.blit(e.image, camera.apply(e))
     screen.blit(avatar.image, camera.apply(avatar))
     pygame.display.update()
